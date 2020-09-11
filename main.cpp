@@ -22,6 +22,8 @@ void shortestPath(Graph g, int src)
 	{ 
 		// The first vertex in pair is the minimum distance vertex 
 		int u = pq.top().second; 
+    std::cout << "pop:d= "<< pq.top().first 
+              << " v= " << pq.top().second << std::endl;
 		pq.pop(); 
 
 	 // Get all adjacent of u.  
@@ -37,7 +39,9 @@ void shortestPath(Graph g, int src)
              dist[v] = dist[u] + weight; 
              pred[v] = u;
              pq.push(std::make_pair(dist[v], v)); 
-          } 
+             std::cout << "  push:d= " << dist[v] 
+                       << " v= " << v <<std::endl;
+           } 
       } 
 	} 
 
