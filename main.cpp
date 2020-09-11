@@ -1,76 +1,78 @@
+#include "Graph.h"
 #include<iostream>
-#define INT_MAX 1000;
-using namespace std;
 
-struct dane {
-  int dystans;
-  int poprzednik;
-  bool odwiedzony;
-};
+#define INF 0x3f3f3f3f 
 
-int szukajMinimum(int n, dane* tab) {
-  int min = -1;
-  int mindist = INT_MAX;
-  for (int i = 0; i < n; i++) {
-    if (!tab[i].odwiedzony && tab[i].dystans < mindist) {
-      min = i;
-      mindist = tab[i].dystans;
-    }
-  }
-  return min;
-}
+// Prints shortest paths from src to all other vertices 
+void shortestPath(Graph g, int src) 
+{ 
+	std::priority_queue< iPair, std::vector <iPair> , std::greater<iPair> > pq; 
 
-void wypiszdane(int i, dane d) {
-  cout << i << "\t";
-  if (!d.odwiedzony) {
-    cout << "nieodwiedzony";
-  } else {
-    if (d.poprzednik == -1)
-      cout << "brak";
-    else cout << d.poprzednik;
-    cout << "\t" << d.dystans;
-  }
-  cout << endl;
-}
+	//vector for distances and initialize all as infinite (INF) 
+	std::vector<int> dist(g.number_of_vertices(), INF); 
+  std::vector<int> pred(g.number_of_vertices(), -1);
 
-dane* Dijkstra(int macierz[5][5], int n, int start) {
-  dane* tab = new dane[n];
-  for (int i = 0; i < n; i++) {
-    tab[i].dystans = (i == start) ? 0 : INT_MAX;
-    tab[i].odwiedzony = false;
-    tab[i].poprzednik = -1;
-  }
-  int u = szukajMinimum(n, tab);
-  while (u != -1) {
-    tab[u].odwiedzony = true;
-    for (int i = 0; i < n; i++) {
-      if (macierz[u][i] > 0 && tab[u].dystans + macierz[u][i] < tab[i].dystans) {
-        tab[i].dystans = tab[u].dystans + macierz[u][i];
-        tab[i].poprzednik = u;
-      }
-    }
-    u = szukajMinimum(n, tab);
-  }
-  return tab;
-}
+	// Insert source itself in priority queue and initialize distance as 0. 
+	pq.push(std::make_pair(0, src)); 
+	dist[src] = 0; 
 
-int main() {
-  int n = 5; // cout << "Ile wierzcholkow ma graf?\n n = ";
-  int s = 0; // cout << "Podaj wierzcholek poczatkowy\n s = ";
+	/* Looping till priority queue becomes empty (or all 
+	distances are not finalized) */
+	while (!pq.empty()) 
+	{ 
+		// The first vertex in pair is the minimum distance vertex 
+		int u = pq.top().second; 
+		pq.pop(); 
 
-  int macierz[5][5] = { 
-    {0,6,3,4,1},
-    {6,0,1,0,0},
-    {3,1,0,2,1},
-    {4,0,2,0,3},
-    {1,0,1,3,0}
-  };
-
-  dane* tab = Dijkstra(macierz, n, s);
+	 // Get all adjacent of u.  
+    for (auto adj_edge : g.adj_vertices(u)) 
+      { 
+          int v = adj_edge.first; 
+          int weight = adj_edge.second; 
   
-  cout << "Wezel\tPoprz.\tDystans" << endl;
-  for (int i = 0; i < n; i++)
-    wypiszdane(i, tab[i]);
-  
-  return 0;
-}
+          // If there is shorted path to v through u. 
+          if (dist[v] > dist[u] + weight) 
+          { 
+             // Updating distance of v 
+             dist[v] = dist[u] + weight; 
+             pred[v] = u;
+             pq.push(std::make_pair(dist[v], v)); 
+          } 
+      } 
+	} 
+
+  std::cout << "Vertex Distance from Source\n"; 
+	for (int i = 0; i < g.number_of_vertices(); ++i){
+    std::cout << i << " pred= "<< pred[i]  << " dist= "<< dist[i] << std::endl;
+  } 
+
+} 
+
+
+// Driver program to test methods of graph class 
+int main() 
+{ 
+	// create the graph given in above fugure 
+	int V = 9; 
+	Graph g(V); 
+
+	// making above shown graph 
+	g.addEdge(0, 1, 4); 
+	g.addEdge(0, 7, 8); 
+	g.addEdge(1, 2, 8); 
+	g.addEdge(1, 7, 11); 
+	g.addEdge(2, 3, 7); 
+	g.addEdge(2, 8, 2); 
+	g.addEdge(2, 5, 4); 
+	g.addEdge(3, 4, 9); 
+	g.addEdge(3, 5, 14); 
+	g.addEdge(4, 5, 10); 
+	g.addEdge(5, 6, 2); 
+	g.addEdge(6, 7, 1); 
+	g.addEdge(6, 8, 6); 
+	g.addEdge(7, 8, 7); 
+
+	shortestPath(g,0); 
+
+	return 0; 
+} 
