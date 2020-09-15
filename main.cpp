@@ -1,82 +1,114 @@
-#include "Graph.h"
+#include<utility>
+#include<list>
+#include<queue>
+#include<set>
+#include<limits>
 #include<iostream>
+#include<cstdlib>
+#include<ctime>
 
-#define INF 0x3f3f3f3f 
+typedef struct {
+  double dist;
+  int vertex_id;
+} adjVert; 
 
-// Prints shortest paths from src to all other vertices 
-void shortestPath(Graph g, int src) 
+class Graph 
 { 
-	std::priority_queue< iPair, std::vector <iPair> , std::greater<iPair> > pq; 
+	int no_of_vertices; 
+	std::list< adjVert > *adj; 
 
-	//vector for distances and initialize all as infinite (INF) 
-	std::vector<int> dist(g.number_of_vertices(), INF); 
-  std::vector<int> pred(g.number_of_vertices(), -1);
+public: 
+	Graph(int no_of_v){ 
+  	no_of_vertices = no_of_v; 
+  	adj = new std::list<adjVert> [no_of_v]; 
+  } 
 
-	// Insert source itself in priority queue and initialize distance as 0. 
-	pq.push(std::make_pair(0, src)); 
-	dist[src] = 0; 
-
-	/* Looping till priority queue becomes empty (or all 
-	distances are not finalized) */
-	while (!pq.empty()) 
-	{ 
-		// The first vertex in pair is the minimum distance vertex 
-		int u = pq.top().second; 
-    std::cout << "pop:d= "<< pq.top().first 
-              << " v= " << pq.top().second << std::endl;
-		pq.pop(); 
-
-	 // Get all adjacent of u.  
-    for (auto adj_edge : g.adj_vertices(u)) 
-      { 
-          int v = adj_edge.first; 
-          int weight = adj_edge.second; 
+	void AddEdge(int u, int v, double dist){ 
+	  adj[u].push_back(adjVert{dist,v}); 
+	  adj[v].push_back(adjVert{dist,u}); 
+  } 
   
-          // If there is shorted path to v through u. 
-          if (dist[v] > dist[u] + weight) 
-          { 
-             // Updating distance of v 
-             dist[v] = dist[u] + weight; 
-             pred[v] = u;
-             pq.push(std::make_pair(dist[v], v)); 
-             std::cout << "  push:d= " << dist[v] 
-                       << " v= " << v <<std::endl;
-           } 
+  int NumOfVertices(){
+    return no_of_vertices;
+  }
+
+  std::list< adjVert > & AdjVertList(int vertex){
+    return adj[vertex];
+  }
+};
+
+
+void ShortestPath(Graph & g, int src) 
+{ 
+  auto cmp_dist = [](adjVert left, adjVert right) { return   (left.dist > right.dist); };
+	std::priority_queue< adjVert, std::vector <adjVert> , decltype(cmp_dist) > p_queue(cmp_dist); 
+
+	std::vector<double> dist_f_src(g.NumOfVertices(), INT32_MAX); //vertex dist from source  
+  std::vector<int> pred_vert(g.NumOfVertices(), -1); //vertes path predecessor.
+
+	// Source vertex insert into prority queue, distance 0 
+	p_queue.push(adjVert{0, src}); 
+	dist_f_src[src] = 0; 
+
+	while (!p_queue.empty()) 
+	{ 
+		int u = p_queue.top().vertex_id; //
+		p_queue.pop(); 
+
+    for (auto adj_vert : g.AdjVertList(u)) //all adjustence veritices to u 
+      { 
+          int v = adj_vert.vertex_id; 
+          double dist_u_v = adj_vert.dist; 
+
+          if (dist_f_src[v] > dist_f_src[u] + dist_u_v) { 
+            dist_f_src[v] = dist_f_src[u] + dist_u_v; 
+            pred_vert[v] = u;
+            p_queue.push(adjVert{dist_f_src[v], v}); 
+          } 
       } 
 	} 
 
-  std::cout << "Vertex Distance from Source\n"; 
-	for (int i = 0; i < g.number_of_vertices(); ++i){
-    std::cout << i << " pred= "<< pred[i]  << " dist= "<< dist[i] << std::endl;
+  double sum = 0; 
+	for (int i = 0; i < g.NumOfVertices(); ++i){
+    sum += dist_f_src[i];
   } 
-
+  std::cout << "Average distance :" << sum / g.NumOfVertices() << "\n";
 } 
 
 
-// Driver program to test methods of graph class 
+inline double randDist(){
+  return 1.0 + 9.0 * (std::rand() / (double) RAND_MAX);
+}
+
+inline bool randEdgExist(double p_threshold){
+  return (std::rand()/(double) RAND_MAX)<p_threshold ? true : false;
+}
+
+void randInitGraph(Graph & g, double p_edge_exist){
+  for(int u=0;u<g.NumOfVertices();u++){
+    for(int v=0;v<g.NumOfVertices();v++){
+      if (randEdgExist(p_edge_exist)){
+        g.AddEdge(u,v,randDist());
+      }
+    }
+  }
+}
+
 int main() 
 { 
-	// create the graph given in above fugure 
-	int V = 9; 
-	Graph g(V); 
+  std::srand(std::time(nullptr));
 
-	// making above shown graph 
-	g.addEdge(0, 1, 4); 
-	g.addEdge(0, 7, 8); 
-	g.addEdge(1, 2, 8); 
-	g.addEdge(1, 7, 11); 
-	g.addEdge(2, 3, 7); 
-	g.addEdge(2, 8, 2); 
-	g.addEdge(2, 5, 4); 
-	g.addEdge(3, 4, 9); 
-	g.addEdge(3, 5, 14); 
-	g.addEdge(4, 5, 10); 
-	g.addEdge(5, 6, 2); 
-	g.addEdge(6, 7, 1); 
-	g.addEdge(6, 8, 6); 
-	g.addEdge(7, 8, 7); 
+	Graph g_10(50); 
+	Graph g_20(50);
+	Graph g_40(50);
 
-	shortestPath(g,0); 
+  randInitGraph(g_10,0.10);
+  randInitGraph(g_20,0.20);
+  randInitGraph(g_40,0.40);
+
+	ShortestPath(g_10,0);
+	ShortestPath(g_20,0);   
+	ShortestPath(g_40,0);
 
 	return 0; 
 } 
