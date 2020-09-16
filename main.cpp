@@ -9,6 +9,7 @@
 #include<iterator>
 #include<fstream>
 #include<vector>
+#include<set>
 
 //Structure used in Graph class for representation of adjacency vertex together with distance form source
 typedef struct {
@@ -72,63 +73,67 @@ public:
 };
 
 //Class claculates minimum spanning tree to all provided vertices from sources node.
-//https://www.thetopsites.net/article/51605961.shtml
+//Implemented Prim algorithm
 class MinimumSpanningTree {
 
-   std::vector<double> * dist_f_src;
+   std::vector<double> * dist;
    std::vector<int> * pred_vert;
    Graph & g;
 
 public:
   MinimumSpanningTree(Graph & g) : g(g)
   { 
-    dist_f_src = new std::vector<double> (g.NumOfVertices(), INT32_MAX); //vertex dist from source  
-    pred_vert  = new std::vector<int> (g.NumOfVertices(), -1);           //vertes path predecessor.
+    dist = new std::vector<double> (g.NumOfVertices(), INT32_MAX); //vertex dist from predecessor  
+    pred_vert  = new std::vector<int> (g.NumOfVertices(), -1); //vertes path predecessor.
   }
 
   ~MinimumSpanningTree(){
-    delete dist_f_src;
+    delete dist;
     delete pred_vert; 
   }
 
-  //Calcluates shortest paths for all vertices from source. 
-  MinimumSpanningTree & source(int src) 
+  //Calcluates MST for all vertices from source. 
+  MinimumSpanningTree & mst() 
   { 
     auto cmp_dist = [](adjVert left, adjVert right) { return   (left.dist > right.dist); };
 	  std::priority_queue< adjVert, std::vector <adjVert> , decltype(cmp_dist) > p_queue(cmp_dist); 
+    std::set<int> closed_set;
 
-	  p_queue.push(adjVert{0, src}); // Source vertex insert into prority queue, distance 0 
-	  (*dist_f_src)[src] = 0; 
+	  p_queue.push(adjVert{0, 0}); // First vertex (by default 0) insert into prority queue, distance 0 
+	  (*dist)[0] = 0; 
 
 	  while (!p_queue.empty()) 
 	  { 
 		  int u = p_queue.top().vertex_id; //
 		  p_queue.pop(); 
+      closed_set. insert(u);
 
       for (auto adj_vert : g.AdjVertList(u)) //all adjustence veritices to u 
         { 
           int v = adj_vert.vertex_id; 
           double dist_u_v = adj_vert.dist; 
 
-          if ((*dist_f_src)[v] > (*dist_f_src)[u] + dist_u_v) { 
-            (*dist_f_src)[v] = (*dist_f_src)[u] + dist_u_v; 
+          if(closed_set.count(v)) continue; //alredy processed vertex, to be skipped. 
+
+          if ((*dist)[v] > dist_u_v) { 
+            (*dist)[v] = dist_u_v; 
             (*pred_vert)[v] = u;
-            p_queue.push(adjVert{(*dist_f_src)[v], v}); 
+            p_queue.push(adjVert{(*dist)[v], v}); 
           } 
         } 
 	  } 
   return *this; //this allow for command chaning eg: cout << a.source(0)
 } 
 
-  friend std::ostream& operator<<(std::ostream& os,  const MinimumSpanningTree &sp); //friend funciton has access to private variables
+  friend std::ostream& operator<<(std::ostream& os,  const MinimumSpanningTree &mst); //friend funciton has access to private variables
 };
 
-std::ostream& operator<<(std::ostream& out, const MinimumSpanningTree &sp){
-  double sum = 0; 
-	for (int i = 0; i < sp.g.NumOfVertices(); ++i){
-    sum += (*sp.dist_f_src)[i];
+//Prints MST
+std::ostream& operator<<(std::ostream& out, const MinimumSpanningTree &mst){
+	for (int i = 0; i < mst.g.NumOfVertices(); ++i){
+    out << "vert :" << i << " pred= " << (*mst.pred_vert)[i] << "\n";
   } 
-  out << "average distance :" << sum / sp.g.NumOfVertices() << "\n";
+  
   return out;
 }
 
@@ -137,7 +142,7 @@ int main()
   Graph g_span_tree("input.txt");
 
 	auto a = MinimumSpanningTree(g_span_tree);
-  std::cout << "Graph  \n" << a.source(0);
+  std::cout << "MST:  \n" << a.mst();
 
 	return 0; 
 } 
